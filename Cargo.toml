@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "fprint-sys",
+    "fprint-rs"
+]
