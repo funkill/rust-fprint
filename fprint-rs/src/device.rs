@@ -1,12 +1,14 @@
 use crate::Driver;
-use std::convert::{TryFrom, TryInto};
-use std::os::raw::c_int;
-use std::os::raw::c_uchar;
-use std::os::unix::ffi::OsStrExt;
-use std::path::Path;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Error;
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt::{Display, Error, Formatter},
+    ops::Generator,
+    os::{
+        raw::{c_int, c_uchar},
+        unix::ffi::OsStrExt,
+    },
+    path::Path,
+};
 
 ///
 #[derive(Debug, Clone)]
@@ -86,7 +88,9 @@ impl Device {
         let mut data: *mut fprint_sys::fp_print_data = std::ptr::null_mut();
         let result = unsafe { fprint_sys::fp_print_data_load(self.0, finger as u32, &mut data) };
         if data.is_null() {
-            return Err(crate::FPrintError::NullPtr(crate::NullPtrContext::LoadPrintData));
+            return Err(crate::FPrintError::NullPtr(
+                crate::NullPtrContext::LoadPrintData,
+            ));
         }
 
         if result == -libc::ENOENT {
@@ -103,7 +107,7 @@ impl Device {
     /// Removes a stored print from disk previously saved with `PrintData::save_to_disk()`.
     pub fn delete_data(&self, finger: Finger) -> crate::Result<()> {
         let result = unsafe { fprint_sys::fp_print_data_delete(self.0, finger as u32) };
-        assert_eq!({result <= 0}, true);
+        assert_eq!({ result <= 0 }, true);
 
         if result == 0 {
             Ok(())
@@ -125,8 +129,10 @@ impl Device {
 
         match result {
             0 => Ok(Image::new(image)),
-            _ if result == -libc::ENOTSUP => Err(crate::FPrintError::NotSupported(crate::NotSupportContext::CapturingImage)),
-            res @ _ => Err(crate::FPrintError::Other(res)),
+            _ if result == -libc::ENOTSUP => Err(crate::FPrintError::NotSupported(
+                crate::NotSupportContext::CapturingImage,
+            )),
+            res => Err(crate::FPrintError::Other(res)),
         }
     }
 
@@ -248,7 +254,9 @@ impl Device {
         };
 
         if result == -libc::ENOTSUP {
-            Err(crate::FPrintError::NotSupported(crate::NotSupportContext::Identify))
+            Err(crate::FPrintError::NotSupported(
+                crate::NotSupportContext::Identify,
+            ))
         } else if result < 0 {
             Err(crate::FPrintError::IdentifyFailed(result))
         } else {
@@ -263,6 +271,7 @@ impl Drop for Device {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum SizeVariant {
     NonImagingDevice,
     Variable,
@@ -274,7 +283,7 @@ impl From<c_int> for SizeVariant {
         match value {
             -1 => SizeVariant::NonImagingDevice,
             0 => SizeVariant::Variable,
-            s @ _ => SizeVariant::Static(s as u32),
+            s => SizeVariant::Static(s as u32),
         }
     }
 }
@@ -372,7 +381,7 @@ impl Drop for PrintData {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Finger {
     LeftThumb = 1,
     LeftIndex = 2,
@@ -420,7 +429,7 @@ impl TryFrom<fprint_sys::fp_finger> for Finger {
             8 => Ok(Finger::RightMiddle),
             9 => Ok(Finger::RightRing),
             10 => Ok(Finger::RightLittle),
-            n @ _ => Err(crate::FPrintError::TryFromError(n)),
+            n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
 }
@@ -438,7 +447,7 @@ impl TryFrom<u32> for CaptureResult {
         match value {
             0 => Ok(CaptureResult::Complete),
             1 => Ok(CaptureResult::Fail),
-            n @ _ => Err(crate::FPrintError::TryFromError(n)),
+            n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
 }
@@ -559,7 +568,7 @@ impl Image {
 /// For more info on the semantics of interpreting these result codes and tracking
 /// enrollment process, see [Enrolling](https://fprint.freedesktop.org/libfprint-stable/libfprint-Devices-operations.html#enrolling)
 #[repr(u32)]
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum EnrollResult {
     Complete = 1,
     /// Enrollment failed due to incomprehensible data; this may occur when
@@ -610,13 +619,13 @@ impl TryFrom<u32> for EnrollResult {
             101 => Ok(EnrollResult::RetryTooShort),
             102 => Ok(EnrollResult::RetryCenterFinger),
             103 => Ok(EnrollResult::RetryRemoveFinger),
-            n @ _ => Err(crate::FPrintError::TryFromError(n)),
+            n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
 }
 
 #[repr(u32)]
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum VerifyResult {
     /// The scan completed successfully, but the newly scanned fingerprint
     /// does not match the fingerprint being verified against.
@@ -668,7 +677,7 @@ impl TryFrom<u32> for VerifyResult {
             n if (n == EnrollResult::RetryRemoveFinger as u32) => {
                 Ok(VerifyResult::RetryRemoveFinger)
             }
-            n @ _ => Err(crate::FPrintError::TryFromError(n)),
+            n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
 }

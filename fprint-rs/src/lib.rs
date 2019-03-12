@@ -1,5 +1,5 @@
+#![feature(generators, generator_trait)]
 #![warn(clippy::all)]
-#![feature(try_from)]
 
 mod device;
 mod discovered_device;
@@ -45,22 +45,10 @@ impl FPrint {
     pub fn discover(&self) -> crate::Result<DiscoveredDevices> {
         let devices_list = unsafe { fprint_sys::fp_discover_devs() };
         if devices_list.is_null() {
-            Err(crate::FPrintError::NullPtr(crate::NullPtrContext::Discovering))
+            Err(crate::FPrintError::NullPtr(
+                crate::NullPtrContext::Discovering,
+            ))
         } else {
-//            let mut devices = vec![];
-//            let mut counter = 0;
-//            loop {
-//                let device: *mut fprint_sys::fp_dscv_dev = unsafe { (*devices_list).offset(counter) };
-//                if device.is_null() {
-//                    break;
-//                }
-//
-//                let device = DiscoveredDev::new(device);
-//                devices.push(device);
-//                counter += 1;
-//            }
-//
-//            Ok(devices)
             DiscoveredDevices::new(devices_list)
         }
     }

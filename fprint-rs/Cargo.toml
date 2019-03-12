@@ -8,3 +8,20 @@ edition = "2018"
 "fprint-sys" = { path = "../fprint-sys/" }
 failure = "0.1.5"
 libc = "0.2.48"
+
+
+[[example]]
+name = "enroll"
+path = "../examples/enroll.rs"
+
+[[example]]
+name = "img_capture"
+path = "../examples/img_capture.rs"
+
+[[example]]
+name = "verify"
+path = "../examples/verify.rs"
+
+[[example]]
+name = "verify_live"
+path = "../examples/verify_live.rs"

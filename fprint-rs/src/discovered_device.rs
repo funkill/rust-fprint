@@ -3,7 +3,6 @@ use crate::{Device, Driver};
 use std::mem::size_of;
 use std::mem::size_of_val;
 
-
 /// These functions allow you to scan the system for supported fingerprint scanning hardware.
 /// This is your starting point when integrating libfprint into your software.
 ///
@@ -70,7 +69,9 @@ impl Iterator for DiscoveredDevices {
 impl DiscoveredDevices {
     pub fn new(devices: *mut *mut fprint_sys::fp_dscv_dev) -> crate::Result<Self> {
         if devices.is_null() {
-            Err(crate::FPrintError::NullPtr(crate::NullPtrContext::CreateDiscoveringDevice))
+            Err(crate::FPrintError::NullPtr(
+                crate::NullPtrContext::CreateDiscoveringDevice,
+            ))
         } else {
             Ok(DiscoveredDevices {
                 inner: devices,

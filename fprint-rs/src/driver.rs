@@ -45,6 +45,7 @@ impl Driver {
 }
 
 /// Devices require either swiping or pressing the finger on the device. This is useful for front-ends.
+#[derive(Debug, Eq, PartialEq)]
 pub enum ScanType {
     /// the reader has a surface area that covers the whole finger
     Press,
@@ -59,7 +60,7 @@ impl TryFrom<u32> for ScanType {
         match value {
             fprint_sys::fp_scan_type_FP_SCAN_TYPE_PRESS => Ok(ScanType::Press),
             fprint_sys::fp_scan_type_FP_SCAN_TYPE_SWIPE => Ok(ScanType::Swipe),
-            n @ _ => Err(crate::FPrintError::TryFromError(n)),
+            n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
 }
