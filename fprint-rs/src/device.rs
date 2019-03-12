@@ -217,13 +217,7 @@ impl Device {
         if result < 0 {
             Err(crate::FPrintError::VerifyFailed(result))
         } else {
-            let result = VerifyResult::try_from(result as u32)?;
-
-            match result {
-                VerifyResult::Match => Ok(result),
-                VerifyResult::NoMatch => Ok(result),
-                _ => Err(crate::FPrintError::RetryVerification(result)),
-            }
+            VerifyResult::try_from(result as u32)
         }
     }
 
@@ -258,13 +252,7 @@ impl Device {
         } else if result < 0 {
             Err(crate::FPrintError::IdentifyFailed(result))
         } else {
-            let result = VerifyResult::try_from(result as u32)?;
-
-            match result {
-                VerifyResult::Match => Ok(result),
-                VerifyResult::NoMatch => Ok(result),
-                _ => Err(crate::FPrintError::RetryVerification(result)),
-            }
+            VerifyResult::try_from(result as u32)
         }
     }
 }
