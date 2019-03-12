@@ -167,16 +167,41 @@ impl Device {
     /// If the device is an imaging device, it can also return the image from the scan, even
     /// when the enroll fails with a `Retry` or `Fail` code. It is legal to call this function
     /// even on non-imaging devices, just don't expect them to provide images.
-    pub fn enroll_finger_image(&self, print: &mut PrintData) -> crate::Result<Image> {
+    pub fn enroll_finger_image(&self, print: &mut PrintData) -> crate::Result<EnrollResult> {
         let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
         let result = unsafe { fprint_sys::fp_enroll_finger_img(self.0, &mut print.0, &mut image) };
 
         if result < 0 {
             Err(crate::FPrintError::UnexpectedAbort(result))
         } else {
-            match EnrollResult::try_from(result as u32)? {
-                EnrollResult::Complete | EnrollResult::Pass => Ok(Image::new(image)),
-                result @ _ => Err(crate::FPrintError::EnrollImage(result)),
+            EnrollResult::try_from(result as u32)
+        }
+    }
+
+    /// Like an `enroll_finger_image` but returns generator what yielded enroll result and
+    /// returns print data.
+    pub fn enroll<'a>(
+        &'a self,
+    ) -> impl Generator<Yield = EnrollResult, Return = crate::Result<PrintData>> + 'a {
+        move || {
+            let mut data = PrintData::new();
+            loop {
+                let result = self.enroll_finger_image(&mut data);
+                match result {
+                    Ok(enroll_result) => {
+                        if enroll_result == EnrollResult::Complete {
+                            if data.0.is_null() {
+                                // @todo: need error
+                                return Err(crate::FPrintError::Obscure(0));
+                            } else {
+                                return Ok(data);
+                            }
+                        } else {
+                            yield enroll_result;
+                        }
+                    }
+                    Err(error) => return Err(error),
+                }
             }
         }
     }
