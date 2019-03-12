@@ -97,7 +97,7 @@ impl Device {
             return Err(crate::FPrintError::Obscure(result));
         }
 
-        Ok(PrintData::new(data))
+        Ok(PrintData::with_data(data))
     }
 
     /// Removes a stored print from disk previously saved with `PrintData::save_to_disk()`.
@@ -269,8 +269,20 @@ impl From<c_int> for SizeVariant {
 #[derive(Debug)]
 pub struct PrintData(pub(crate) *mut fprint_sys::fp_print_data);
 
+impl Default for PrintData {
+    fn default() -> Self {
+        PrintData::new()
+    }
+}
+
 impl PrintData {
-    pub fn new(data: *mut fprint_sys::fp_print_data) -> Self {
+    pub fn new() -> Self {
+        let data = std::ptr::null_mut();
+
+        Self::with_data(data)
+    }
+
+    pub fn with_data(data: *mut fprint_sys::fp_print_data) -> Self {
         PrintData(data)
     }
 
@@ -336,7 +348,7 @@ impl TryFrom<Location> for PrintData {
             // TODO: refactor it!
             Err(crate::FPrintError::TryFromError(0))
         } else {
-            Ok(PrintData::new(print))
+            Ok(PrintData::with_data(print))
         }
     }
 }
