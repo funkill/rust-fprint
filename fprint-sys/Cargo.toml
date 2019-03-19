@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["funkill <funkill2@gmail.com>"]
 edition = "2018"
 links = "fprint"
+description = "FFI bindings to fprint"
+repository = "https://github.com/funkill/rust-fprint"
+categories = ["external-ffi-bindings"]
+license-file = "LICENSE"
 
 [package.metadata.pkg-config]
 libfprint = "*"

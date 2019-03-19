@@ -3,12 +3,16 @@ name = "fprint-rs"
 version = "0.1.0"
 authors = ["funkill <funkill2@gmail.com>"]
 edition = "2018"
+description = "fprint bindings"
+repository = "https://github.com/funkill/rust-fprint"
+categories = ["api-bindings"]
+keywords = ["fprint", "libfprint"]
+license-file = "LICENSE"
 
 [dependencies]
-"fprint-sys" = { path = "../fprint-sys/" }
+"fprint-sys" = { version = "0.1.0", path = "../fprint-sys/" }
 failure = "0.1.5"
 libc = "0.2.48"
-
 
 [[example]]
 name = "enroll"
