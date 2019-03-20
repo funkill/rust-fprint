@@ -17,3 +17,6 @@ libfprint = "*"
 [build-dependencies]
 bindgen = "0.47.1"
 pkg-config = "0.3.14"
+
+[package.metadata.docs.rs]
+dependencies = [ "libfprint-dev" ]

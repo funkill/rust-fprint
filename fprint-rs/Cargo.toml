@@ -29,3 +29,6 @@ path = "../examples/verify.rs"
 [[example]]
 name = "verify_live"
 path = "../examples/verify_live.rs"
+
+[package.metadata.docs.rs]
+dependencies = [ "libfprint-dev" ]
