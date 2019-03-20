@@ -8,22 +8,16 @@ fn main() {
         .probe("libfprint")
         .unwrap();
 
-    lib.include_paths.iter().for_each(|path| {
+    for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.to_str().unwrap());
-    });
+    }
 
     let bindgen = bindgen::Builder::default().header("stddef.h");
-    let bindgen =
-        lib.include_paths
-            .iter()
-            .zip(lib.libs.iter())
-            .fold(bindgen, |bindgen, (include, lib)| {
-                let mut include = include.clone();
-                let lib_name = lib.clone() + ".h";
-                include.push(lib_name);
-
-                bindgen.header(include.to_str().unwrap())
-            });
+    let bindgen = {
+        let mut path = lib.include_paths.first().unwrap().clone();
+        path.push("fprint.h");
+        bindgen.header(path.to_string_lossy().into_owned())
+    };
 
     let bindings = bindgen
         .generate_comments(true)
