@@ -1,0 +1,18 @@
+[package]
+name = "spacs"
+version = "0.1.0"
+authors = ["funkill <funkill2@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+fprint-rs = { path = "../../fprint-rs" }
+rusqlite = "0.17"
+failure = "0.1"
+
+[[bin]]
+name = "saver"
+path = "src/saver.rs"
+
+[[bin]]
+name = "identifier"
+path = "src/identifier.rs"
