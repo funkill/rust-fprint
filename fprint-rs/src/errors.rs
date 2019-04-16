@@ -45,6 +45,8 @@ pub enum FPrintError {
     TryFromError(u32),
     #[fail(display = "Path not exists")]
     PathNotExists,
+    #[fail(display = "Error not specified. Please, write issue")]
+    NeedError,
 }
 
 #[derive(Debug, Fail)]

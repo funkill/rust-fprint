@@ -10,9 +10,9 @@ keywords = ["fprint", "libfprint"]
 license-file = "LICENSE"
 
 [dependencies]
-"fprint-sys" = { version = "0.1.0", path = "../fprint-sys/" }
-failure = "0.1.5"
-libc = "0.2.48"
+"fprint-sys" = { version = "0.1", path = "../fprint-sys/" }
+failure = "0.1"
+libc = "0.2"
 
 [[example]]
 name = "enroll"

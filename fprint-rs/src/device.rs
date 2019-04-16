@@ -1,6 +1,6 @@
 use crate::Driver;
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     fmt::{Display, Error, Formatter},
     ops::Generator,
     os::{
@@ -198,7 +198,7 @@ impl Device {
                         if enroll_result == EnrollResult::Complete {
                             if data.0.is_null() {
                                 // @todo: need error
-                                return Err(crate::FPrintError::Obscure(0));
+                                return Err(crate::FPrintError::NeedError);
                             } else {
                                 return Ok(data);
                             }
@@ -242,16 +242,21 @@ impl Device {
     /// as soon as it finds a matching print.
     ///
     /// Not all devices support identification. -ENOTSUP will be returned when this is the case.
-    pub fn identify_finger_image(
-        &self,
-        gallery: &mut PrintData,
-        offset: usize,
-    ) -> crate::Result<VerifyResult> {
+    pub fn identify_finger_image(&self, gallery: &Vec<Vec<u8>>) -> crate::Result<IdentifyResult> {
         let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
-        let mut offset = offset;
-        let result = unsafe {
-            fprint_sys::fp_identify_finger_img(self.0, &mut gallery.0, &mut offset, &mut image)
-        };
+        let mut offset = 0;
+
+        let mut gallery = gallery
+            .iter()
+            .map(|item| PrintData::from_bytes_raw(item))
+            .filter(Result::is_ok)
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        gallery.push(std::ptr::null_mut());
+        let gallery = gallery.as_ptr() as *mut *mut fprint_sys::fp_print_data;
+
+        let result =
+            unsafe { fprint_sys::fp_identify_finger_img(self.0, gallery, &mut offset, &mut image) };
 
         if result == -libc::ENOTSUP {
             Err(crate::FPrintError::NotSupported(
@@ -260,7 +265,12 @@ impl Device {
         } else if result < 0 {
             Err(crate::FPrintError::IdentifyFailed(result))
         } else {
-            VerifyResult::try_from(result as u32)
+            let result = match VerifyResult::try_from(result as u32)? {
+                VerifyResult::Match => IdentifyResult::Matched(offset),
+                n @ _ => IdentifyResult::Error(n),
+            };
+
+            Ok(result)
         }
     }
 }
@@ -288,7 +298,7 @@ impl From<c_int> for SizeVariant {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PrintData(pub(crate) *mut fprint_sys::fp_print_data);
 
 impl Default for PrintData {
@@ -330,21 +340,45 @@ impl PrintData {
     /// Convert a stored print into a unified representation inside a data buffer.
     /// You can then store this data buffer in any way that suits you, and load it back at
     /// some later time using `PrintData::from_data()` (or `PrintData::try_from(Location)`).
-    pub fn get_data(&self) -> crate::Result<Location> {
+    pub fn get_data(&self) -> crate::Result<&[u8]> {
+        self.as_bytes()
+    }
+
+    pub fn as_bytes(&self) -> crate::Result<&[u8]> {
         let mut buf: *mut c_uchar = std::ptr::null_mut();
         let length = unsafe { fprint_sys::fp_print_data_get_data(self.0, &mut buf) };
 
         if length == 0 {
             Err(crate::FPrintError::ConvertationFailed)
         } else {
-            Ok(Location::new(buf, length))
+            let data = unsafe { std::slice::from_raw_parts(buf, length) };
+
+            Ok(data)
         }
     }
 
     /// Load a stored print from a data buffer. The contents of said buffer must be the untouched
     /// contents of a buffer previously supplied to you by the `PrintData::get_data()`.
-    pub fn from_data(data: Location) -> crate::Result<Self> {
-        data.try_into()
+    pub fn from_data(data: &[u8]) -> crate::Result<Self> {
+        Self::from_bytes(data)
+    }
+
+    pub fn from_bytes(bytes: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Self::from_bytes_raw(bytes).map(Self::with_data)
+    }
+
+    pub(crate) fn from_bytes_raw(bytes: impl AsRef<[u8]>) -> crate::Result<*mut fprint_sys::fp_print_data> {
+        let bytes = bytes.as_ref();
+        let len = bytes.len();
+        let value = bytes.as_ptr() as *mut u8;
+        let print = unsafe { fprint_sys::fp_print_data_from_data(value, len) };
+
+        if print.is_null() {
+            // TODO: refactor it!
+            Err(crate::FPrintError::NeedError)
+        } else {
+            Ok(print)
+        }
     }
 
     /// Gets the driver ID for a stored print. The driver ID indicates which driver the print
@@ -357,21 +391,6 @@ impl PrintData {
     /// represents which type of device under the parent driver is compatible with the print.
     pub fn get_devtype(&self) -> u32 {
         unsafe { fprint_sys::fp_print_data_get_devtype(self.0) }
-    }
-}
-
-impl TryFrom<Location> for PrintData {
-    type Error = crate::FPrintError;
-
-    fn try_from(value: Location) -> Result<Self, Self::Error> {
-        let print = unsafe { fprint_sys::fp_print_data_from_data(value.inner, value.length) };
-
-        if print.is_null() {
-            // TODO: refactor it!
-            Err(crate::FPrintError::TryFromError(0))
-        } else {
-            Ok(PrintData::with_data(print))
-        }
     }
 }
 
@@ -631,8 +650,8 @@ impl TryFrom<u32> for VerifyResult {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(VerifyResult::NoMatch),
-            1 => Ok(VerifyResult::Match),
+            fprint_sys::fp_verify_result_FP_VERIFY_NO_MATCH => Ok(VerifyResult::NoMatch),
+            fprint_sys::fp_verify_result_FP_VERIFY_MATCH => Ok(VerifyResult::Match),
             n if (n == EnrollResult::Retry as u32) => Ok(VerifyResult::Retry),
             n if (n == EnrollResult::RetryCenterFinger as u32) => {
                 Ok(VerifyResult::RetryCenterFinger)
@@ -645,14 +664,18 @@ impl TryFrom<u32> for VerifyResult {
     }
 }
 
-#[derive(Debug)]
-pub struct Location {
-    inner: *mut c_uchar,
-    length: usize,
+#[repr(u32)]
+#[derive(Debug, Eq, PartialEq)]
+pub enum IdentifyResult {
+    Matched(usize),
+    Error(VerifyResult),
 }
 
-impl Location {
-    pub fn new(loc: *mut c_uchar, length: usize) -> Self {
-        Location { inner: loc, length }
+impl Display for IdentifyResult {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match self {
+            IdentifyResult::Matched(offset) => write!(f, "Identity result offset: {}", offset),
+            IdentifyResult::Error(error) => write!(f, "{}", error),
+        }
     }
 }

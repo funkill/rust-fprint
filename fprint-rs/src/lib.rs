@@ -1,4 +1,5 @@
 #![feature(generators, generator_trait)]
+#![feature(str_as_mut_ptr, alloc_layout_extra)]
 #![warn(clippy::all)]
 
 mod device;
