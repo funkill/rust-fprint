@@ -12,7 +12,9 @@ fn main() {
         println!("cargo:include={}", path.to_str().unwrap());
     }
 
-    let bindgen = bindgen::Builder::default().header("stddef.h");
+    let bindgen = bindgen::Builder::default()
+        .header("stddef.h")
+        .header("unistd.h");
     let bindgen = {
         let mut path = lib.include_paths.first().unwrap().clone();
         path.push("fprint.h");
