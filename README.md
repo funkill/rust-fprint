@@ -1,6 +1,6 @@
 # rust-fprint
 
-libfprint bindings for the Rust programming language
+libfprint bindings for the Rust programming language. Currently in WIP status.
 
 # Requirements
 
