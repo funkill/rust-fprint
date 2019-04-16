@@ -522,44 +522,7 @@ impl Image {
             Ok(Image::new(result))
         }
     }
-
-    //    /// Get a list of minutiae detected in an image. A minutia point is a feature detected on a
-    //    /// fingerprint, typically where ridges end or split. libfprint's image processing code relies
-    //    /// upon comparing sets of minutiae, so accurate placement of minutia points is critical
-    //    /// for good imaging performance.
-    //    ///
-    //    /// The image must have been standardized otherwise this function will fail.
-    //    ///
-    //    /// You cannot pass a binarized image to this function. Instead, pass the original image.
-    //    ///
-    //    /// Returns a list of pointers to minutiae, where the list is of length indicated in the
-    //    /// nr_minutiae output parameter. The returned list is only valid while the parent image
-    //    /// has not been freed, and the minutiae data must not be modified or freed.
-    //    pub fn get_minutiae(&mut self, nr_minutiae: *int) -> Vec<Minutiae> {
-    //        self.standardize();
-    //
-    //        let minutiaes = unsafe { fprint_sys::fp_img_get_minutiae(self.inner, nr_minutiae) };
-    //        if minutiaes.is_null() {
-    //            Err(())
-    //        } else {
-    //            let minutiae: *mut fprint_sys::fp_dscv_dev = unsafe { (*minutiaes).offset(0) };
-    //            let minutiae: fprint_sys::fp_dscv_dev = unsafe { minutiae.read() };
-    //            let minutiae = Minutiae::new(minutiae);
-    //
-    //            Ok(vec![minutiae])
-    //        }
-    //    }
 }
-
-//struct Minutiae {
-//
-//}
-//
-//impl Minutiae {
-//    pub fn new(minutiae: *mut fprint_sys::fp_minutia) -> Self {
-//
-//    }
-//}
 
 /// Enrollment result codes returned from `Device::enroll_finger`. Result codes with `RETRY`
 /// in the name suggest that the scan failed due to user error. Applications will generally
