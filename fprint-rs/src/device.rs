@@ -4,7 +4,7 @@ use std::{
     fmt::{Display, Error, Formatter},
     ops::Generator,
     os::{
-        raw::{c_int, c_uchar},
+        raw::{c_int, c_uchar, c_char},
         unix::ffi::OsStrExt,
     },
     path::Path,
@@ -370,7 +370,7 @@ impl PrintData {
     pub(crate) fn from_bytes_raw(bytes: impl AsRef<[u8]>) -> crate::Result<*mut fprint_sys::fp_print_data> {
         let bytes = bytes.as_ref();
         let len = bytes.len();
-        let value = bytes.as_ptr() as *mut u8;
+        let value = bytes.as_ptr() as *mut c_uchar;
         let print = unsafe { fprint_sys::fp_print_data_from_data(value, len) };
 
         if print.is_null() {
@@ -504,7 +504,7 @@ impl Image {
 
         let path = path.as_os_str().as_bytes().as_ptr();
 
-        let result = unsafe { fprint_sys::fp_img_save_to_file(self.0, path as *mut i8) };
+        let result = unsafe { fprint_sys::fp_img_save_to_file(self.0, path as *mut c_char) };
         if result == 0 {
             Ok(())
         } else {
