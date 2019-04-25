@@ -7,7 +7,7 @@ description = "fprint bindings"
 repository = "https://github.com/funkill/rust-fprint"
 categories = ["api-bindings"]
 keywords = ["fprint", "libfprint"]
-license-file = "LICENSE"
+license = "MIT"
 
 [dependencies]
 "fprint-sys" = { version = "0.1", path = "../fprint-sys/" }

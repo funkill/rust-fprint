@@ -7,7 +7,7 @@ links = "fprint"
 description = "FFI bindings to fprint"
 repository = "https://github.com/funkill/rust-fprint"
 categories = ["external-ffi-bindings"]
-license-file = "LICENSE"
+license = "MIT"
 build = "build/build.rs"
 
 [package.metadata.pkg-config]
