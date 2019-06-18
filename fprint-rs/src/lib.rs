@@ -6,8 +6,10 @@ mod device;
 mod discovered_device;
 mod driver;
 mod errors;
+mod finger;
+mod print_data;
 
-pub use crate::{device::*, discovered_device::*, driver::*, errors::*};
+pub use crate::{device::*, discovered_device::*, driver::*, errors::*, print_data::*, finger::*};
 
 pub type Result<T> = std::result::Result<T, FPrintError>;
 

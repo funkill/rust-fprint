@@ -1,5 +1,6 @@
-use crate::device::{EnrollResult, Finger, VerifyResult};
+use crate::device::{VerifyResult};
 use failure::Fail;
+use crate::Finger;
 
 // TODO: refactor it!
 #[derive(Debug, Fail)]
@@ -26,11 +27,6 @@ pub enum FPrintError {
         _0
     )]
     UnexpectedAbort(i32),
-    #[fail(
-        display = "Enroll image process fails or required retry. Original error: {}",
-        _0
-    )]
-    EnrollImage(EnrollResult),
     #[fail(display = "Verifying fingerprint failed. Error code: {}", _0)]
     VerifyFailed(i32),
     #[fail(display = "Retry verification. Reason: {}", _0)]

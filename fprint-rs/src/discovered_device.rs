@@ -1,5 +1,4 @@
-use crate::device::PrintData;
-use crate::{Device, Driver};
+use crate::{Device, Driver, PrintData};
 use std::mem::size_of;
 use std::mem::size_of_val;
 
