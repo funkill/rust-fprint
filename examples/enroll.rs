@@ -17,7 +17,7 @@ fn main() -> Result<(), FPrintError> {
     let _ = stdin().read(&mut [0u8]);
 
     let fprint = FPrint::new()?;
-    let discovered = fprint.discover()?;
+    let discovered = fprint.discover();
     let device = discovered.get(0).expect("Device not found").open();
 
     println!(

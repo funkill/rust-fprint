@@ -45,15 +45,10 @@ impl FPrint {
 
     /// Scans the system and returns a list of discovered devices. This is your entry point
     /// into finding a fingerprint reader to operate.
-    pub fn discover(&self) -> crate::Result<DiscoveredDevices> {
+    pub fn discover(&self) -> DiscoveredDevices {
         let devices_list = unsafe { fprint_sys::fp_discover_devs() };
-        if devices_list.is_null() {
-            Err(crate::FPrintError::NullPtr(
-                crate::NullPtrContext::Discovering,
-            ))
-        } else {
-            DiscoveredDevices::new(devices_list)
-        }
+
+        DiscoveredDevices::with_devices(devices_list)
     }
 }
 

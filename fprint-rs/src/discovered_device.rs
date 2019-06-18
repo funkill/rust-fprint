@@ -1,6 +1,5 @@
 use crate::{Device, Driver, PrintData};
-use std::mem::size_of;
-use std::mem::size_of_val;
+use std::mem::{size_of, size_of_val};
 
 /// These functions allow you to scan the system for supported fingerprint scanning hardware.
 /// This is your starting point when integrating libfprint into your software.
@@ -58,24 +57,24 @@ impl Iterator for DiscoveredDevices {
         let item = unsafe { self.inner.offset(self.current_item_number) };
         let device: *mut fprint_sys::fp_dscv_dev = unsafe { item.read() };
         if device.is_null() {
-            return None;
+            None
+        } else {
+            Some(DiscoveredDev::new(device))
         }
-
-        Some(DiscoveredDev::new(device))
     }
 }
 
 impl DiscoveredDevices {
-    pub fn new(devices: *mut *mut fprint_sys::fp_dscv_dev) -> crate::Result<Self> {
-        if devices.is_null() {
-            Err(crate::FPrintError::NullPtr(
-                crate::NullPtrContext::CreateDiscoveringDevice,
-            ))
-        } else {
-            Ok(DiscoveredDevices {
-                inner: devices,
-                current_item_number: 0,
-            })
+    pub fn new() -> Self {
+        let devices = std::ptr::null_mut();
+
+        Self::with_devices(devices)
+    }
+
+    pub fn with_devices(devices: *mut *mut fprint_sys::fp_dscv_dev) -> Self {
+        DiscoveredDevices {
+            inner: devices,
+            current_item_number: 0,
         }
     }
 
@@ -99,8 +98,15 @@ impl DiscoveredDevices {
     }
 }
 
+impl Default for DiscoveredDevices {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for DiscoveredDevices {
     fn drop(&mut self) {
+        // If inner is null all ok, because fp_dscv_devs_free simply returns if des is null.
         unsafe { fprint_sys::fp_dscv_devs_free(self.inner) };
     }
 }

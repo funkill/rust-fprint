@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 fn main() -> Result<(), Error> {
     let fprint = FPrint::new()?;
-    let discovered = fprint.discover()?;
+    let discovered = fprint.discover();
     let device = discovered.get(0).expect("Device not found").open();
     let (fingers, users) = load_fingers()?;
 
