@@ -8,29 +8,29 @@ use std::mem::{size_of, size_of_val};
 /// with `open()`. Note that discovered devices may no longer be available at the time when you
 /// want to open them, for example the user may have unplugged the device.
 #[derive(Debug, Clone)]
-pub struct DiscoveredDev(*mut fprint_sys::fp_dscv_dev);
+pub struct DiscoveredDev(*mut crate::bindings::fp_dscv_dev);
 
 impl DiscoveredDev {
-    pub fn new(inner: *mut fprint_sys::fp_dscv_dev) -> Self {
+    pub fn new(inner: *mut crate::bindings::fp_dscv_dev) -> Self {
         DiscoveredDev(inner)
     }
 
     /// Gets the `Driver` for a discovered device.
     pub fn get_driver(&self) -> Driver {
-        let driver = unsafe { fprint_sys::fp_dscv_dev_get_driver(self.0) };
+        let driver = unsafe { crate::bindings::fp_dscv_dev_get_driver(self.0) };
 
         Driver::new(driver)
     }
 
     /// Gets the devtype for a discovered device.
     pub fn get_devtype(&self) -> u32 {
-        unsafe { fprint_sys::fp_dscv_dev_get_devtype(self.0) }
+        unsafe { crate::bindings::fp_dscv_dev_get_devtype(self.0) }
     }
 
     /// Determines if a specific `PrintData` stored print appears to be compatible
     /// with a discovered device.
     pub fn supports_print_data(&self, data: &mut PrintData) -> bool {
-        let result = unsafe { fprint_sys::fp_dscv_dev_supports_print_data(self.0, data.0) };
+        let result = unsafe { crate::bindings::fp_dscv_dev_supports_print_data(self.0, data.0) };
 
         result == 1
     }
@@ -38,7 +38,7 @@ impl DiscoveredDev {
     /// Opens and initialises a device. This is the function you call in order to convert
     /// a discovered device into an actual device handle that you can perform operations with.
     pub fn open(&self) -> Device {
-        let device = unsafe { fprint_sys::fp_dev_open(self.0) };
+        let device = unsafe { crate::bindings::fp_dev_open(self.0) };
 
         Device::new(device)
     }
@@ -46,7 +46,7 @@ impl DiscoveredDev {
 
 #[derive(Debug, Clone)]
 pub struct DiscoveredDevices {
-    inner: *mut *mut fprint_sys::fp_dscv_dev,
+    inner: *mut *mut crate::bindings::fp_dscv_dev,
     current_item_number: isize,
 }
 
@@ -55,7 +55,7 @@ impl Iterator for DiscoveredDevices {
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = unsafe { self.inner.offset(self.current_item_number) };
-        let device: *mut fprint_sys::fp_dscv_dev = unsafe { item.read() };
+        let device: *mut crate::bindings::fp_dscv_dev = unsafe { item.read() };
         if device.is_null() {
             None
         } else {
@@ -71,7 +71,7 @@ impl DiscoveredDevices {
         Self::with_devices(devices)
     }
 
-    pub fn with_devices(devices: *mut *mut fprint_sys::fp_dscv_dev) -> Self {
+    pub fn with_devices(devices: *mut *mut crate::bindings::fp_dscv_dev) -> Self {
         DiscoveredDevices {
             inner: devices,
             current_item_number: 0,
@@ -84,7 +84,7 @@ impl DiscoveredDevices {
         }
 
         let item = unsafe { self.inner.offset(index) };
-        let device: *mut fprint_sys::fp_dscv_dev = unsafe { item.read() };
+        let device: *mut crate::bindings::fp_dscv_dev = unsafe { item.read() };
 
         if device.is_null() {
             None
@@ -94,7 +94,7 @@ impl DiscoveredDevices {
     }
 
     pub fn count(&self) -> usize {
-        size_of_val(&self.inner) / size_of::<*mut fprint_sys::fp_dscv_dev>()
+        size_of_val(&self.inner) / size_of::<*mut crate::bindings::fp_dscv_dev>()
     }
 }
 
@@ -107,6 +107,6 @@ impl Default for DiscoveredDevices {
 impl Drop for DiscoveredDevices {
     fn drop(&mut self) {
         // If inner is null all ok, because fp_dscv_devs_free simply returns if des is null.
-        unsafe { fprint_sys::fp_dscv_devs_free(self.inner) };
+        unsafe { crate::bindings::fp_dscv_devs_free(self.inner) };
     }
 }

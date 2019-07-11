@@ -34,10 +34,10 @@ impl fmt::Display for Finger {
     }
 }
 
-impl TryFrom<fprint_sys::fp_finger> for Finger {
+impl TryFrom<crate::bindings::fp_finger> for Finger {
     type Error = crate::FPrintError;
 
-    fn try_from(value: fprint_sys::fp_finger) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::bindings::fp_finger) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(Finger::LeftThumb),
             2 => Ok(Finger::LeftIndex),

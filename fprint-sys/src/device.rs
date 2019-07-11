@@ -12,23 +12,23 @@ use std::{
 
 ///
 #[derive(Debug, Clone)]
-pub struct Device(*mut fprint_sys::fp_dev);
+pub struct Device(*mut crate::bindings::fp_dev);
 
 impl Device {
-    pub fn new(device: *mut fprint_sys::fp_dev) -> Self {
+    pub fn new(device: *mut crate::bindings::fp_dev) -> Self {
         Device(device)
     }
 
     /// Get the `Driver` for a fingerprint device.
     pub fn get_driver(&self) -> Driver {
-        let driver = unsafe { fprint_sys::fp_dev_get_driver(self.0) };
+        let driver = unsafe { crate::bindings::fp_dev_get_driver(self.0) };
 
         Driver::new(driver)
     }
 
     /// Gets the number of enroll stages required to enroll a fingerprint with the device.
     pub fn get_nr_enroll_stages(&self) -> i32 {
-        unsafe { fprint_sys::fp_dev_get_nr_enroll_stages(self.0) as i32 }
+        unsafe { crate::bindings::fp_dev_get_nr_enroll_stages(self.0) as i32 }
     }
 
     /// Alias for `get_nr_enroll_stages`
@@ -38,12 +38,12 @@ impl Device {
 
     /// Gets the devtype for a device.
     pub fn get_dev_type(&self) -> u32 {
-        unsafe { fprint_sys::fp_dev_get_devtype(self.0) }
+        unsafe { crate::bindings::fp_dev_get_devtype(self.0) }
     }
 
     /// Determines if a stored print is compatible with a certain device.
     pub fn supports_print_data(&self, data: &PrintData) -> bool {
-        let result = unsafe { fprint_sys::fp_dev_supports_print_data(self.0, data.0) };
+        let result = unsafe { crate::bindings::fp_dev_supports_print_data(self.0, data.0) };
 
         result != 0
     }
@@ -57,7 +57,7 @@ impl Device {
     /// `img_capture`. However, not all devices are imaging devices – some do all processing
     /// in hardware. This function will indicate which class a device in question falls into.
     pub fn supports_imaging(&self) -> bool {
-        let result = unsafe { fprint_sys::fp_dev_supports_imaging(self.0) };
+        let result = unsafe { crate::bindings::fp_dev_supports_imaging(self.0) };
 
         result == 0
     }
@@ -65,7 +65,7 @@ impl Device {
     /// Determines if a device is capable of identification through `identify_finger` and similar.
     /// Not all devices support this functionality.
     pub fn supports_identification(&self) -> bool {
-        let result = unsafe { fprint_sys::fp_dev_supports_identification(self.0) };
+        let result = unsafe { crate::bindings::fp_dev_supports_identification(self.0) };
 
         result == 0
     }
@@ -73,20 +73,20 @@ impl Device {
     /// Gets the expected width of images that will be captured from the device.
     /// If the width of images from this device can vary, 0 will be returned.
     pub fn get_img_width(&self) -> SizeVariant {
-        unsafe { fprint_sys::fp_dev_get_img_width(self.0) }.into()
+        unsafe { crate::bindings::fp_dev_get_img_width(self.0) }.into()
     }
 
     /// Gets the expected height of images that will be captured from the device.
     /// If the height of images from this device can vary, 0 will be returned.
     pub fn get_img_height(&self) -> SizeVariant {
-        unsafe { fprint_sys::fp_dev_get_img_height(self.0) }.into()
+        unsafe { crate::bindings::fp_dev_get_img_height(self.0) }.into()
     }
 
     /// Loads a previously stored print from disk. The print must have been saved earlier
     /// using the `PrintData::save_to_disk()` function
     pub fn load_data(&self, finger: Finger) -> crate::Result<PrintData> {
-        let mut data: *mut fprint_sys::fp_print_data = std::ptr::null_mut();
-        let result = unsafe { fprint_sys::fp_print_data_load(self.0, finger as u32, &mut data) };
+        let mut data: *mut crate::bindings::fp_print_data = std::ptr::null_mut();
+        let result = unsafe { crate::bindings::fp_print_data_load(self.0, finger as u32, &mut data) };
         if data.is_null() {
             return Err(crate::FPrintError::NullPtr(
                 crate::NullPtrContext::LoadPrintData,
@@ -106,7 +106,7 @@ impl Device {
 
     /// Removes a stored print from disk previously saved with `PrintData::save_to_disk()`.
     pub fn delete_data(&self, finger: Finger) -> crate::Result<()> {
-        let result = unsafe { fprint_sys::fp_print_data_delete(self.0, finger as u32) };
+        let result = unsafe { crate::bindings::fp_print_data_delete(self.0, finger as u32) };
         assert_eq!({ result <= 0 }, true);
 
         if result == 0 {
@@ -123,9 +123,9 @@ impl Device {
     /// unconditionally, regardless of whether a finger is there or not. If unset, this function
     /// will block until a finger is detected on the sensor.
     pub fn capture_image(&self, unconditional: bool) -> crate::Result<Image> {
-        let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
+        let mut image: *mut crate::bindings::fp_img = std::ptr::null_mut();
         let result =
-            unsafe { fprint_sys::fp_dev_img_capture(self.0, unconditional as i32, &mut image) };
+            unsafe { crate::bindings::fp_dev_img_capture(self.0, unconditional as i32, &mut image) };
 
         match result {
             0 => Ok(Image::with_image(image)),
@@ -176,7 +176,7 @@ impl Device {
     pub fn enroll_finger_image(&self) -> crate::Result<EnrollResult> {
         let mut print = PrintData::new();
         let mut image = Image::new();
-        let result = unsafe { fprint_sys::fp_enroll_finger_img(self.0, &mut print.0, &mut image.0) };
+        let result = unsafe { crate::bindings::fp_enroll_finger_img(self.0, &mut print.0, &mut image.0) };
 
         if result < 0 {
             Err(crate::FPrintError::UnexpectedAbort(result))
@@ -190,8 +190,8 @@ impl Device {
     /// when the verify fails with a RETRY code. It is legal to call this function even on
     /// non-imaging devices, just don't expect them to provide images.
     pub fn verify_finger_image(&self, print: &mut PrintData) -> crate::Result<VerifyResult> {
-        let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
-        let result = unsafe { fprint_sys::fp_verify_finger_img(self.0, print.0, &mut image) };
+        let mut image: *mut crate::bindings::fp_img = std::ptr::null_mut();
+        let result = unsafe { crate::bindings::fp_verify_finger_img(self.0, print.0, &mut image) };
 
         if result < 0 {
             Err(crate::FPrintError::VerifyFailed(result))
@@ -216,7 +216,7 @@ impl Device {
     ///
     /// Not all devices support identification. -ENOTSUP will be returned when this is the case.
     pub fn identify_finger_image(&self, gallery: &Vec<Vec<u8>>) -> crate::Result<IdentifyResult> {
-        let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
+        let mut image: *mut crate::bindings::fp_img = std::ptr::null_mut();
         let mut offset = 0;
 
         let mut gallery = gallery
@@ -226,10 +226,10 @@ impl Device {
             .map(Result::unwrap)
             .collect::<Vec<_>>();
         gallery.push(std::ptr::null_mut());
-        let gallery = gallery.as_ptr() as *mut *mut fprint_sys::fp_print_data;
+        let gallery = gallery.as_ptr() as *mut *mut crate::bindings::fp_print_data;
 
         let result =
-            unsafe { fprint_sys::fp_identify_finger_img(self.0, gallery, &mut offset, &mut image) };
+            unsafe { crate::bindings::fp_identify_finger_img(self.0, gallery, &mut offset, &mut image) };
 
         if result == -libc::ENOTSUP {
             Err(crate::FPrintError::NotSupported(
@@ -250,7 +250,7 @@ impl Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
-        unsafe { fprint_sys::fp_dev_close(self.0) }
+        unsafe { crate::bindings::fp_dev_close(self.0) }
     }
 }
 
@@ -290,7 +290,7 @@ impl TryFrom<u32> for CaptureResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Image(*mut fprint_sys::fp_img);
+pub struct Image(*mut crate::bindings::fp_img);
 
 impl Image {
     pub fn new() -> Self {
@@ -299,25 +299,25 @@ impl Image {
         Image::with_image(inner)
     }
 
-    pub fn with_image(image: *mut fprint_sys::fp_img) -> Self {
+    pub fn with_image(image: *mut crate::bindings::fp_img) -> Self {
         Image(image)
     }
 
     /// Gets the pixel height of an image.
     pub fn get_height(&self) -> i32 {
-        unsafe { fprint_sys::fp_img_get_height(self.0) }
+        unsafe { crate::bindings::fp_img_get_height(self.0) }
     }
 
     /// Gets the pixel width of an image.
     pub fn get_width(&self) -> i32 {
-        unsafe { fprint_sys::fp_img_get_width(self.0) }
+        unsafe { crate::bindings::fp_img_get_width(self.0) }
     }
 
     /// Gets the greyscale data for an image. This data must not be modified or freed,
     /// and must not be used after dropping `Image`.
     /// Returns a pointer to libfprint's internal data for the image
     pub fn get_data(&self) -> *const c_uchar {
-        unsafe { fprint_sys::fp_img_get_data(self.0) }
+        unsafe { crate::bindings::fp_img_get_data(self.0) }
     }
 
     /// A quick convenience function to save an image to a file in [PGM format](http://netpbm.sourceforge.net/doc/pgm.html).
@@ -329,7 +329,7 @@ impl Image {
 
         let path = path.as_os_str().as_bytes().as_ptr();
 
-        let result = unsafe { fprint_sys::fp_img_save_to_file(self.0, path as *mut c_char) };
+        let result = unsafe { crate::bindings::fp_img_save_to_file(self.0, path as *mut c_char) };
         if result == 0 {
             Ok(())
         } else {
@@ -342,7 +342,7 @@ impl Image {
     /// times on an image, `libfprint` keeps track of the work it needs to do to make an image
     /// standard and will not perform these operations more than once for a given image.
     pub fn standardize(&self) {
-        unsafe { fprint_sys::fp_img_standardize(self.0) };
+        unsafe { crate::bindings::fp_img_standardize(self.0) };
     }
 
     /// Get a binarized form of a standardized scanned image. This is where the fingerprint image
@@ -358,7 +358,7 @@ impl Image {
     /// You cannot binarize an image twice.
     pub fn binarize(&self) -> crate::Result<Self> {
         self.standardize();
-        let result = unsafe { fprint_sys::fp_img_binarize(self.0) };
+        let result = unsafe { crate::bindings::fp_img_binarize(self.0) };
 
         if result.is_null() {
             Err(crate::FPrintError::NullPtr(crate::NullPtrContext::Binarize))
@@ -474,11 +474,11 @@ impl TryFrom<u32> for VerifyResult {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            fprint_sys::fp_verify_result_FP_VERIFY_NO_MATCH => Ok(VerifyResult::NoMatch),
-            fprint_sys::fp_verify_result_FP_VERIFY_MATCH => Ok(VerifyResult::Match),
-            fprint_sys::fp_verify_result_FP_VERIFY_RETRY => Ok(VerifyResult::Retry),
-            fprint_sys::fp_verify_result_FP_VERIFY_RETRY_CENTER_FINGER => Ok(VerifyResult::RetryCenterFinger),
-            fprint_sys::fp_verify_result_FP_VERIFY_RETRY_REMOVE_FINGER => Ok(VerifyResult::RetryRemoveFinger),
+            crate::bindings::fp_verify_result_FP_VERIFY_NO_MATCH => Ok(VerifyResult::NoMatch),
+            crate::bindings::fp_verify_result_FP_VERIFY_MATCH => Ok(VerifyResult::Match),
+            crate::bindings::fp_verify_result_FP_VERIFY_RETRY => Ok(VerifyResult::Retry),
+            crate::bindings::fp_verify_result_FP_VERIFY_RETRY_CENTER_FINGER => Ok(VerifyResult::RetryCenterFinger),
+            crate::bindings::fp_verify_result_FP_VERIFY_RETRY_REMOVE_FINGER => Ok(VerifyResult::RetryRemoveFinger),
             n => Err(crate::FPrintError::TryFromError(n)),
         }
     }

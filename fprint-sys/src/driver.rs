@@ -6,17 +6,17 @@ use std::ffi::CStr;
 /// these internal abstractions, however there are some situations where you may be interested
 /// in a little behind-the-scenes driver info.
 #[derive(Debug)]
-pub struct Driver(*mut fprint_sys::fp_driver);
+pub struct Driver(*mut crate::bindings::fp_driver);
 
 impl Driver {
-    pub fn new(driver: *mut fprint_sys::fp_driver) -> Self {
+    pub fn new(driver: *mut crate::bindings::fp_driver) -> Self {
         Driver(driver)
     }
 
     /// Retrieves the name of the driver. For example: "upekts"
     pub fn get_name(&self) -> String {
         unsafe {
-            let name = fprint_sys::fp_driver_get_name(self.0);
+            let name = crate::bindings::fp_driver_get_name(self.0);
 
             CStr::from_ptr(name).to_string_lossy().into_owned()
         }
@@ -25,7 +25,7 @@ impl Driver {
     /// Retrieves a descriptive name of the driver. For example: "UPEK TouchStrip"
     pub fn get_full_name(&self) -> String {
         unsafe {
-            let full_name = fprint_sys::fp_driver_get_full_name(self.0);
+            let full_name = crate::bindings::fp_driver_get_full_name(self.0);
 
             CStr::from_ptr(full_name).to_string_lossy().into_owned()
         }
@@ -33,12 +33,12 @@ impl Driver {
 
     /// Retrieves the driver ID code for a driver.
     pub fn get_driver_id(&self) -> u16 {
-        unsafe { fprint_sys::fp_driver_get_driver_id(self.0) }
+        unsafe { crate::bindings::fp_driver_get_driver_id(self.0) }
     }
 
     /// Retrieves the scan type for the devices associated with the driver.
     pub fn get_scan_type(&self) -> crate::Result<ScanType> {
-        let scan_type = unsafe { fprint_sys::fp_driver_get_scan_type(self.0) };
+        let scan_type = unsafe { crate::bindings::fp_driver_get_scan_type(self.0) };
 
         ScanType::try_from(scan_type)
     }
@@ -58,8 +58,8 @@ impl TryFrom<u32> for ScanType {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            fprint_sys::fp_scan_type_FP_SCAN_TYPE_PRESS => Ok(ScanType::Press),
-            fprint_sys::fp_scan_type_FP_SCAN_TYPE_SWIPE => Ok(ScanType::Swipe),
+            crate::bindings::fp_scan_type_FP_SCAN_TYPE_PRESS => Ok(ScanType::Press),
+            crate::bindings::fp_scan_type_FP_SCAN_TYPE_SWIPE => Ok(ScanType::Swipe),
             n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
