@@ -86,7 +86,11 @@ fn save(data: PrintData, user_id: u32) -> Result<(), Error> {
     let mut stmt =
         conn.prepare("INSERT INTO fingers (user_id, finger, size_data) VALUES (?, ?, ?)")?;
     let data = data.as_bytes()?;
-    stmt.execute(&[&user_id as &ToSql, &data, &(data.len() as u32) as &ToSql])?;
+    stmt.execute(&[
+        &user_id as &dyn ToSql,
+        &data,
+        &(data.len() as u32) as &dyn ToSql,
+    ])?;
 
     println!("Print data saved");
 

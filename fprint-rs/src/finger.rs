@@ -53,4 +53,3 @@ impl TryFrom<fprint_sys::fp_finger> for Finger {
         }
     }
 }
-

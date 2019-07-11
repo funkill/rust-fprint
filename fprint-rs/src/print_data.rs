@@ -1,5 +1,5 @@
-use std::os::raw::c_uchar;
 use crate::finger::Finger;
+use std::os::raw::c_uchar;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrintData(pub(crate) *mut fprint_sys::fp_print_data);
@@ -65,7 +65,9 @@ impl PrintData {
         Self::from_bytes_raw(bytes).map(Self::with_data)
     }
 
-    pub(crate) fn from_bytes_raw(bytes: impl AsRef<[u8]>) -> crate::Result<*mut fprint_sys::fp_print_data> {
+    pub(crate) fn from_bytes_raw(
+        bytes: impl AsRef<[u8]>,
+    ) -> crate::Result<*mut fprint_sys::fp_print_data> {
         let bytes = bytes.as_ref();
         let len = bytes.len();
         let value = bytes.as_ptr() as *mut c_uchar;

@@ -1,15 +1,15 @@
+use crate::print_data::PrintData;
 use crate::{Driver, Finger};
 use std::{
     convert::TryFrom,
     fmt::{Display, Error, Formatter},
     ops::Generator,
     os::{
-        raw::{c_int, c_uchar, c_char},
+        raw::{c_char, c_int, c_uchar},
         unix::ffi::OsStrExt,
     },
     path::Path,
 };
-use crate::print_data::PrintData;
 
 ///
 #[derive(Debug, Clone)]

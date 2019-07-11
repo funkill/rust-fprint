@@ -1,6 +1,6 @@
-use crate::device::{VerifyResult};
-use failure::Fail;
+use crate::device::VerifyResult;
 use crate::Finger;
+use failure::Fail;
 
 // TODO: refactor it!
 #[derive(Debug, Fail)]

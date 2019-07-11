@@ -1,5 +1,5 @@
 #![feature(generators, generator_trait)]
-#![feature(str_as_mut_ptr, alloc_layout_extra)]
+#![feature(alloc_layout_extra)]
 #![warn(clippy::all)]
 
 mod device;
@@ -9,7 +9,7 @@ mod errors;
 mod finger;
 mod print_data;
 
-pub use crate::{device::*, discovered_device::*, driver::*, errors::*, print_data::*, finger::*};
+pub use crate::{device::*, discovered_device::*, driver::*, errors::*, finger::*, print_data::*};
 
 pub type Result<T> = std::result::Result<T, FPrintError>;
 

@@ -3,16 +3,13 @@ use std::path::PathBuf;
 
 fn main() {
     let mut build_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let lib = pkg_config::Config::new()
-        .probe("libfprint")
-        .unwrap();
+    let lib = pkg_config::Config::new().probe("libfprint").unwrap();
 
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.to_str().unwrap());
     }
 
-    let bindgen = bindgen::Builder::default()
-        .header("build/wrapper.h");
+    let bindgen = bindgen::Builder::default().header("build/wrapper.h");
 
     let bindings = bindgen
         .generate_comments(true)
