@@ -3,7 +3,6 @@ use crate::{Driver, Finger};
 use std::{
     convert::TryFrom,
     fmt::{Display, Error, Formatter},
-    ops::Generator,
     os::{
         raw::{c_char, c_int, c_uchar},
         unix::ffi::OsStrExt,
@@ -129,7 +128,7 @@ impl Device {
             unsafe { fprint_sys::fp_dev_img_capture(self.0, unconditional as i32, &mut image) };
 
         match result {
-            0 => Ok(Image::new(image)),
+            0 => Ok(Image::with_image(image)),
             _ if result == -libc::ENOTSUP => Err(crate::FPrintError::NotSupported(
                 crate::NotSupportContext::CapturingImage,
             )),
@@ -174,42 +173,15 @@ impl Device {
     /// If the device is an imaging device, it can also return the image from the scan, even
     /// when the enroll fails with a `Retry` or `Fail` code. It is legal to call this function
     /// even on non-imaging devices, just don't expect them to provide images.
-    pub fn enroll_finger_image(&self, print: &mut PrintData) -> crate::Result<EnrollResult> {
-        let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
-        let result = unsafe { fprint_sys::fp_enroll_finger_img(self.0, &mut print.0, &mut image) };
+    pub fn enroll_finger_image(&self) -> crate::Result<EnrollResult> {
+        let mut print = PrintData::new();
+        let mut image = Image::new();
+        let result = unsafe { fprint_sys::fp_enroll_finger_img(self.0, &mut print.0, &mut image.0) };
 
         if result < 0 {
             Err(crate::FPrintError::UnexpectedAbort(result))
         } else {
-            EnrollResult::try_from(result as u32)
-        }
-    }
-
-    /// Like an `enroll_finger_image` but returns generator what yielded enroll result and
-    /// returns print data.
-    pub fn enroll<'a>(
-        &'a self,
-    ) -> impl Generator<Yield = EnrollResult, Return = crate::Result<PrintData>> + 'a {
-        move || {
-            let mut data = PrintData::new();
-            loop {
-                let result = self.enroll_finger_image(&mut data);
-                match result {
-                    Ok(enroll_result) => {
-                        if enroll_result == EnrollResult::Complete {
-                            if data.0.is_null() {
-                                // @todo: need error
-                                return Err(crate::FPrintError::NeedError);
-                            } else {
-                                return Ok(data);
-                            }
-                        } else {
-                            yield enroll_result;
-                        }
-                    }
-                    Err(error) => return Err(error),
-                }
-            }
+            EnrollResult::try_from((result as u32, print, image))
         }
     }
 
@@ -317,10 +289,17 @@ impl TryFrom<u32> for CaptureResult {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Image(*mut fprint_sys::fp_img);
 
 impl Image {
-    pub fn new(image: *mut fprint_sys::fp_img) -> Self {
+    pub fn new() -> Self {
+        let inner = std::ptr::null_mut();
+
+        Image::with_image(inner)
+    }
+
+    pub fn with_image(image: *mut fprint_sys::fp_img) -> Self {
         Image(image)
     }
 
@@ -384,7 +363,7 @@ impl Image {
         if result.is_null() {
             Err(crate::FPrintError::NullPtr(crate::NullPtrContext::Binarize))
         } else {
-            Ok(Image::new(result))
+            Ok(Image::with_image(result))
         }
     }
 }
@@ -395,36 +374,35 @@ impl Image {
 ///
 /// For more info on the semantics of interpreting these result codes and tracking
 /// enrollment process, see [Enrolling](https://fprint.freedesktop.org/libfprint-stable/libfprint-Devices-operations.html#enrolling)
-#[repr(u32)]
 #[derive(Debug, Eq, PartialEq)]
 pub enum EnrollResult {
-    Complete = 1,
+    Complete(PrintData, Image),
     /// Enrollment failed due to incomprehensible data; this may occur when
     /// the user scans a different finger on each enroll stage.
-    Fail = 2,
+    Fail,
     /// Enroll stage passed; more stages are need to complete the process.
-    Pass = 3,
+    Pass(Image),
     /// The enrollment scan did not succeed due to poor scan quality or
     /// other general user scanning problem.
-    Retry = 100,
+    Retry,
     /// The enrollment scan did not succeed because the finger swipe was
     /// too short.
-    RetryTooShort = 101,
+    RetryTooShort,
     /// The enrollment scan did not succeed because the finger was not
     /// centered on the scanner.
-    RetryCenterFinger = 102,
+    RetryCenterFinger,
     /// The verification scan did not succeed due to quality or pressure
     /// problems; the user should remove their finger from the scanner before
     /// retrying.
-    RetryRemoveFinger = 103,
+    RetryRemoveFinger,
 }
 
 impl Display for EnrollResult {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         let string = match self {
-            EnrollResult::Complete => "Complete",
+            EnrollResult::Complete(_, _) => "Complete",
             EnrollResult::Fail => "Fail",
-            EnrollResult::Pass => "Pass",
+            EnrollResult::Pass(_) => "Pass",
             EnrollResult::Retry => "Retry",
             EnrollResult::RetryTooShort => "Retry: too short",
             EnrollResult::RetryCenterFinger => "Retry: center finger",
@@ -435,14 +413,14 @@ impl Display for EnrollResult {
     }
 }
 
-impl TryFrom<u32> for EnrollResult {
+impl TryFrom<(u32, PrintData, Image)> for EnrollResult {
     type Error = crate::FPrintError;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(EnrollResult::Complete),
+    fn try_from((raw_value, data, image): (u32, PrintData, Image)) -> Result<Self, Self::Error> {
+        match raw_value {
+            1 => Ok(EnrollResult::Complete(data, image)),
             2 => Ok(EnrollResult::Fail),
-            3 => Ok(EnrollResult::Pass),
+            3 => Ok(EnrollResult::Pass(image)),
             100 => Ok(EnrollResult::Retry),
             101 => Ok(EnrollResult::RetryTooShort),
             102 => Ok(EnrollResult::RetryCenterFinger),
@@ -466,14 +444,14 @@ pub enum VerifyResult {
     Match = 1,
     /// The scan did not succeed due to poor scan quality or other general
     /// user scanning problem.
-    Retry = EnrollResult::Retry as u32,
+    Retry = 100,
     /// The scan did not succeed because the finger swipe was too short.
-    RetryTooShort = EnrollResult::RetryTooShort as u32,
+    RetryTooShort = 101,
     /// The scan did not succeed because the finger was not centered on the scanner.
-    RetryCenterFinger = EnrollResult::RetryCenterFinger as u32,
+    RetryCenterFinger = 102,
     /// The scan did not succeed due to quality or pressure problems; the user
     /// should remove their finger from the scanner before retrying.
-    RetryRemoveFinger = EnrollResult::RetryRemoveFinger as u32,
+    RetryRemoveFinger = 103,
 }
 
 impl Display for VerifyResult {
@@ -498,13 +476,9 @@ impl TryFrom<u32> for VerifyResult {
         match value {
             fprint_sys::fp_verify_result_FP_VERIFY_NO_MATCH => Ok(VerifyResult::NoMatch),
             fprint_sys::fp_verify_result_FP_VERIFY_MATCH => Ok(VerifyResult::Match),
-            n if (n == EnrollResult::Retry as u32) => Ok(VerifyResult::Retry),
-            n if (n == EnrollResult::RetryCenterFinger as u32) => {
-                Ok(VerifyResult::RetryCenterFinger)
-            }
-            n if (n == EnrollResult::RetryRemoveFinger as u32) => {
-                Ok(VerifyResult::RetryRemoveFinger)
-            }
+            fprint_sys::fp_verify_result_FP_VERIFY_RETRY => Ok(VerifyResult::Retry),
+            fprint_sys::fp_verify_result_FP_VERIFY_RETRY_CENTER_FINGER => Ok(VerifyResult::RetryCenterFinger),
+            fprint_sys::fp_verify_result_FP_VERIFY_RETRY_REMOVE_FINGER => Ok(VerifyResult::RetryRemoveFinger),
             n => Err(crate::FPrintError::TryFromError(n)),
         }
     }
