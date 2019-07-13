@@ -9,7 +9,6 @@ use std::{
 
 fn get_user_id() -> Result<u32, Error> {
     let user_id = std::env::args()
-        .into_iter()
         .collect::<Vec<_>>()
         .get(1)
         .expect("User id not found (must be first argument)")

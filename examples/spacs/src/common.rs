@@ -1,1 +1,1 @@
-pub const DB_PATH: &'static str = "fingers.sqlite";
+pub const DB_PATH: &str = "fingers.sqlite";

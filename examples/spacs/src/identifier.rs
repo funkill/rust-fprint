@@ -28,6 +28,7 @@ fn main() -> Result<(), Error> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn load_fingers() -> Result<(Vec<Vec<u8>>, HashMap<usize, i32>), Error> {
     let fingers = vec![];
     let user_offsets = HashMap::new();

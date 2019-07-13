@@ -3,7 +3,7 @@ use std::io::{stdin, Read};
 
 fn main() -> Result<(), FPrintError> {
     let fprint = FPrint::new()?;
-    let discovered = fprint.discover()?;
+    let discovered = fprint.discover();
     let device = discovered.get(0).expect("Device not found").open();
 
     println!("Opened device. Loading previously enrolled right index finger data...");
