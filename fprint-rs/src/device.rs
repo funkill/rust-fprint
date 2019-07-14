@@ -215,13 +215,13 @@ impl Device {
     /// as soon as it finds a matching print.
     ///
     /// Not all devices support identification. -ENOTSUP will be returned when this is the case.
-    pub fn identify_finger_image(&self, gallery: &Vec<Vec<u8>>) -> crate::Result<IdentifyResult> {
+    pub fn identify_finger_image(&self, gallery: &[Vec<u8>]) -> crate::Result<IdentifyResult> {
         let mut image: *mut fprint_sys::fp_img = std::ptr::null_mut();
         let mut offset = 0;
 
         let mut gallery = gallery
             .iter()
-            .map(|item| PrintData::from_bytes_raw(item))
+            .map(PrintData::from_bytes_raw)
             .filter(Result::is_ok)
             .map(Result::unwrap)
             .collect::<Vec<_>>();
@@ -240,7 +240,7 @@ impl Device {
         } else {
             let result = match VerifyResult::try_from(result as u32)? {
                 VerifyResult::Match => IdentifyResult::Matched(offset),
-                n @ _ => IdentifyResult::Error(n),
+                n => IdentifyResult::Error(n),
             };
 
             Ok(result)
@@ -365,6 +365,12 @@ impl Image {
         } else {
             Ok(Image::with_image(result))
         }
+    }
+}
+
+impl Default for Image {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
