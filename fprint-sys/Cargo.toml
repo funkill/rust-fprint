@@ -1,6 +1,6 @@
 [package]
 name = "fprint-sys"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["funkill <funkill2@gmail.com>"]
 edition = "2018"
 links = "fprint"
@@ -16,7 +16,7 @@ libfprint = "*"
 [dependencies]
 
 [build-dependencies]
-bindgen = "0.47"
+bindgen = "0.50"
 pkg-config = "0.3"
 
 [package.metadata.docs.rs]
