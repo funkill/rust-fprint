@@ -1,0 +1,11 @@
+version: 1
+
+update_configs:
+  - package_manager: rust:cargo
+    directory: "/fprint-sys/"
+    update_schedule: "live"
+    default_assignees: ["funkill"]
+  - package_manager: rust:cargo
+    directory: "/fprint-rs/"
+    update_schedule: "live"
+    default_assignees: ["funkill"]
