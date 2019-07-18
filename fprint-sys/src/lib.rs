@@ -7,7 +7,7 @@ mod bindings {
         non_snake_case,
         unused_variables,
         clippy::unreadable_literal,
-        clippy::const_static_lifetime
+        clippy::redundant_static_lifetimes
     )]
     include!(concat!(env!("OUT_DIR"), "/fprint.rs"));
 }
