@@ -1,0 +1,23 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/fprint-sys"
+  schedule:
+    interval: daily
+    time: "02:00"
+  open-pull-requests-limit: 10
+  assignees:
+  - funkill
+  ignore:
+  - dependency-name: bindgen
+    versions:
+    - 0.56.0
+    - 0.57.0
+- package-ecosystem: cargo
+  directory: "/fprint-rs"
+  schedule:
+    interval: daily
+    time: "02:00"
+  open-pull-requests-limit: 10
+  assignees:
+  - funkill
